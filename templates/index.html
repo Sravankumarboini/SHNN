@@ -1,128 +1,115 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-<meta charset="UTF-8">
-<title>Self-Healing Neural Network</title>
+    <title>SHNN Demo</title>
 
-<style>
+    <style>
+        body {
+            font-family: Arial;
+            background: linear-gradient(135deg, #1e3c72, #2a5298);
+            color: white;
+            text-align: center;
+            padding: 50px;
+        }
 
-body{
-font-family: Arial;
-background: linear-gradient(135deg,#0f2027,#203a43,#2c5364);
-height:100vh;
-display:flex;
-justify-content:center;
-align-items:center;
-color:white;
-}
+        .container {
+            background: rgba(255,255,255,0.1);
+            padding: 30px;
+            border-radius: 15px;
+            width: 420px;
+            margin: auto;
+        }
 
-.container{
-background: rgba(255,255,255,0.1);
-padding:40px;
-border-radius:15px;
-text-align:center;
-width:450px;
-backdrop-filter: blur(10px);
-box-shadow:0 10px 25px rgba(0,0,0,0.3);
-}
+        button {
+            padding: 10px 20px;
+            border-radius: 10px;
+            border: none;
+            background: #00c6ff;
+            cursor: pointer;
+        }
 
-h1{
-margin-bottom:20px;
-}
+        .card {
+            background: white;
+            color: black;
+            padding: 15px;
+            margin: 10px;
+            border-radius: 10px;
+            font-weight: bold;
+        }
 
-input{
-margin:15px 0;
-}
+        .before { border-left: 5px solid green; }
+        .fault { border-left: 5px solid red; }
+        .heal { border-left: 5px solid blue; }
 
-button{
-background:#00c6ff;
-border:none;
-padding:10px 25px;
-font-size:16px;
-border-radius:10px;
-cursor:pointer;
-color:white;
-}
-
-button:hover{
-background:#0072ff;
-}
-
-.result{
-margin-top:20px;
-text-align:left;
-}
-
-</style>
+        .loading {
+            display: none;
+        }
+    </style>
 </head>
 
 <body>
 
-<div class="container">
-
 <h1>🧠 Self-Healing Neural Network</h1>
 
-<input type="file" id="imageInput">
+<div class="container">
 
-<br>
+    <input type="file" id="fileInput"><br><br>
+    <button onclick="sendImage()">Predict</button>
 
-<button onclick="sendImage()">Predict</button>
+    <p id="loading">⏳ Processing...</p>
 
-<div class="result" id="output"></div>
+    <div id="result"></div>
 
 </div>
 
 <script>
+function sendImage() {
 
-function sendImage(){
+    let file = document.getElementById("fileInput").files[0];
 
-const file = document.getElementById("imageInput").files[0];
+    if (!file) {
+        alert("Upload image!");
+        return;
+    }
 
-if(!file){
-alert("Upload image first");
-return;
+    let formData = new FormData();
+    formData.append("file", file);
+
+    document.getElementById("loading").style.display = "block";
+
+    fetch("http://localhost:5000/predict", {
+        method: "POST",
+        body: formData
+    })
+    .then(res => res.json())
+    .then(data => {
+
+        document.getElementById("loading").style.display = "none";
+
+        document.getElementById("result").innerHTML = `
+
+            <div class="card before">
+                ✅ Before Fault: ${data.before_fault[0]} <br>
+                Accuracy: ${data.baseline_acc}
+            </div>
+
+            <div class="card fault">
+                ❌ After Fault: ${data.after_fault[0]} <br>
+                Accuracy: ${data.faulty_acc}
+            </div>
+
+            <div class="card heal">
+                🔄 After Healing: ${data.after_healing[0]} <br>
+                Accuracy: ${data.healed_acc}
+            </div>
+
+        `;
+    })
+    .catch(err => {
+        document.getElementById("loading").innerHTML = "❌ Error";
+        console.error(err);
+    });
 }
-
-const formData = new FormData();
-formData.append("file", file);
-
-fetch("https://shnn.onrender.com/predict", {
-method:"POST",
-body:formData
-})
-.then(res => {
-if(!res.ok){
-throw new Error("Server error");
-}
-return res.json();
-})
-.then(data => {
-
-const before = data.before_fault;
-const after = data.after_fault;
-const heal = data.after_healing;
-
-document.getElementById("output").innerHTML = `
-<b>Prediction Results</b><br><br>
-
-Before Fault: Digit ${before[0]} (Confidence ${before[1]}) <br>
-After Fault: Digit ${after[0]} (Confidence ${after[1]}) <br>
-After Healing: Digit ${heal[0]} (Confidence ${heal[1]}) <br><br>
-
-<b>Model Accuracy</b><br>
-
-Baseline Accuracy: ${data.baseline_acc}% <br>
-Faulty Accuracy: ${data.faulty_acc}% <br>
-Healed Accuracy: ${data.healed_acc}%
-`;
-
-})
-.catch(err=>{
-document.getElementById("output").innerHTML="❌ Error connecting to server";
-});
-
-}
-
 </script>
 
 </body>
