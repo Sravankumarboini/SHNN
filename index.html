@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>SHNN Demo</title>
+
+    <style>
+        body {
+            font-family: Arial;
+            background: linear-gradient(135deg, #1e3c72, #2a5298);
+            color: white;
+            text-align: center;
+            padding: 50px;
+        }
+
+        .container {
+            background: rgba(255,255,255,0.1);
+            padding: 30px;
+            border-radius: 15px;
+            width: 420px;
+            margin: auto;
+        }
+
+        button {
+            padding: 10px 20px;
+            border-radius: 10px;
+            border: none;
+            background: #00c6ff;
+            cursor: pointer;
+        }
+
+        .card {
+            background: white;
+            color: black;
+            padding: 15px;
+            margin: 10px;
+            border-radius: 10px;
+            font-weight: bold;
+        }
+
+        .before { border-left: 5px solid green; }
+        .fault { border-left: 5px solid red; }
+        .heal { border-left: 5px solid blue; }
+
+        .loading {
+            display: none;
+        }
+    </style>
+</head>
+
+<body>
+
+<h1>🧠 Self-Healing Neural Network</h1>
+
+<div class="container">
+
+    <input type="file" id="fileInput"><br><br>
+    <button onclick="sendImage()">Predict</button>
+
+    <p id="loading">⏳ Processing...</p>
+
+    <div id="result"></div>
+
+</div>
+
+<script>
+function sendImage() {
+
+    let file = document.getElementById("fileInput").files[0];
+
+    if (!file) {
+        alert("Upload image!");
+        return;
+    }
+
+    let formData = new FormData();
+    formData.append("file", file);
+
+    document.getElementById("loading").style.display = "block";
+
+    fetch("http://localhost:5000/predict", {
+        method: "POST",
+        body: formData
+    })
+    .then(res => res.json())
+    .then(data => {
+
+        document.getElementById("loading").style.display = "none";
+
+        document.getElementById("result").innerHTML = `
+
+            <div class="card before">
+                ✅ Before Fault: ${data.before_fault[0]} <br>
+                Accuracy: ${data.baseline_acc}
+            </div>
+
+            <div class="card fault">
+                ❌ After Fault: ${data.after_fault[0]} <br>
+                Accuracy: ${data.faulty_acc}
+            </div>
+
+            <div class="card heal">
+                🔄 After Healing: ${data.after_healing[0]} <br>
+                Accuracy: ${data.healed_acc}
+            </div>
+
+        `;
+    })
+    .catch(err => {
+        document.getElementById("loading").innerHTML = "❌ Error";
+        console.error(err);
+    });
+}
+</script>
+
+</body>
+</html>
