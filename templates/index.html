@@ -4,8 +4,6 @@
 <meta charset="UTF-8">
 <title>Self-Healing Neural Network</title>
 
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
 <style>
 
 body{
@@ -55,13 +53,6 @@ margin-top:20px;
 text-align:left;
 }
 
-canvas{
-margin-top:20px;
-background:white;
-border-radius:10px;
-padding:10px;
-}
-
 </style>
 </head>
 
@@ -79,12 +70,9 @@ padding:10px;
 
 <div class="result" id="output"></div>
 
-<canvas id="accChart"></canvas>
-
 </div>
 
 <script>
-
 
 function sendImage(){
 
@@ -102,7 +90,12 @@ fetch("https://shnn.onrender.com/predict", {
 method:"POST",
 body:formData
 })
-.then(res => res.json())
+.then(res => {
+if(!res.ok){
+throw new Error("Server error");
+}
+return res.json();
+})
 .then(data => {
 
 const before = data.before_fault;
@@ -123,41 +116,12 @@ Faulty Accuracy: ${data.faulty_acc}% <br>
 Healed Accuracy: ${data.healed_acc}%
 `;
 
-drawGraph(data);
-
 })
 .catch(err=>{
 document.getElementById("output").innerHTML="❌ Error connecting to server";
 });
 
 }
-
-const ctx = document.getElementById("accChart").getContext("2d");
-
-if(chart){
-chart.destroy();
-}
-
-chart = new Chart(ctx,{
-type:"bar",
-data:{
-labels:["Baseline","Faulty","Healed"],
-datasets:[{
-label:"Accuracy %",
-data:[
-data.baseline_acc,
-data.faulty_acc,
-data.healed_acc
-],
-backgroundColor:[
-"#4CAF50",
-"#F44336",
-"#2196F3"
-]
-}]
-}
-});
-
 
 </script>
 
